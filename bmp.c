@@ -96,7 +96,7 @@ bmp_error_t bmp_openfile(bmp_t* bmp, const char* filepath) {
     }
 
     bmp_header_t bmp_header;
-
+    bmp_header.imageSize = 0;
 
     size_t filesize;
     // Go to the end of the file
