@@ -17,6 +17,8 @@ int main() {
         return 1;
     }
 
+    // bmp_rotate(&bmp, RIGHT);
+    bmp_rotate(&bmp, LEFT);
     bmp_rotate(&bmp, RIGHT);
 
     bmp_save(&bmp, "rotated_image.bmp");

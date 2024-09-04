@@ -136,6 +136,32 @@ bmp_error_t bmp_rotate(bmp_t *bmp, bmp_rotation_direction_t direction) {
     return NO_ERROR;
 }
 
+bmp_error_t bmp_flip(bmp_t *bmp) {
+    if (bmp->data == NULL) {
+        return NULL_PTR_ERROR;
+    }
+
+    uint32_t bytes_per_pixel = bmp->color_depth / 8;
+    uint32_t row_size = bmp->width * bytes_per_pixel;
+    uint8_t *new_data = malloc(bmp->width * bmp->height * bytes_per_pixel);
+
+    if (new_data == NULL) {
+        return OUT_OF_MEMORY;
+    }
+
+    for (uint32_t y = 0; y < bmp->height; y++) {
+        uint32_t src_offset = y * row_size;
+        uint32_t dst_offset = (bmp->height - 1 - y) * row_size;
+        memcpy(new_data + dst_offset, bmp->data + src_offset, row_size);
+    }
+
+    free(bmp->data);
+    bmp->data = new_data;
+
+    return NO_ERROR;
+}
+
+
 bmp_error_t bmp_openfile(bmp_t* bmp, const char* filepath) {
     FILE* fptr;
     fptr = fopen(filepath, "rb");
@@ -172,10 +198,6 @@ bmp_error_t bmp_openfile(bmp_t* bmp, const char* filepath) {
         printf("\n");
 
 
-    print_header(&bmp_header);
-    printf("\n\n\n");
-    print_header_hex(&bmp_header);
-    printf("Header Size: %lu\n", sizeof(bmp_header_t));
     fseek(fptr, bmp_header.size + 14, SEEK_SET);
 
     // bmp_header.signature = change_endian_16(bmp_header.signature);
