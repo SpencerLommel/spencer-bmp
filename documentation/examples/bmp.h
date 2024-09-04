@@ -44,10 +44,16 @@ typedef enum {
 
 } bmp_error_t;
 
+typedef enum {
+    LEFT = 0,
+    RIGHT
+} bmp_rotation_direction_t;
+
 extern const char* bmp_error_strings[];
 
 bmp_error_t bmp_init(bmp_t* bmp);
 bmp_error_t bmp_init_data(bmp_t* bmp, uint16_t width, uint16_t height, uint8_t color_depth);
+bmp_error_t bmp_rotate(bmp_t* bmp, bmp_rotation_direction_t direction);
 bmp_error_t bmp_destroy(bmp_t* bmp);
 bmp_error_t bmp_openfile(bmp_t* bmp, const char* filepath);
 bmp_error_t bmp_save(bmp_t* bmp, const char* filepath);

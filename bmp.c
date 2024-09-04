@@ -1,8 +1,9 @@
 // bmp.c
-#include <stdio.h> 
-#include <stdint.h> 
+#include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 #include "bmp.h"
 
 typedef struct {
@@ -40,6 +41,11 @@ const char* bmp_error_strings[] = {
     "INVALID_COMPRESSION",
     "DATA_EXISTS",
     "OUT_OF_MEMORY"
+};
+
+const char* bmp_rotation_directions[] = {
+    "LEFT",
+    "RIGHT"
 };
 
 typedef enum {
@@ -87,6 +93,49 @@ bmp_error_t bmp_destroy(bmp_t* bmp) {
     return NULL_PTR_ERROR;
 }
 
+bmp_error_t bmp_rotate(bmp_t *bmp, bmp_rotation_direction_t direction) {
+    if (bmp->data == NULL) {
+        return NULL_PTR_ERROR;
+    }
+
+    // Calculate the new width and height after rotation
+    uint32_t new_width = (direction == RIGHT) ? bmp->height : bmp->width;
+    uint32_t new_height = (direction == RIGHT) ? bmp->width : bmp->height;
+
+    // Allocate memory for the new image data
+    uint8_t *new_data = malloc(new_width * new_height * (bmp->color_depth / 8));
+    if (new_data == NULL) {
+        return OUT_OF_MEMORY;
+    }
+
+    // Rotate the image data
+    for (uint32_t y = 0; y < bmp->height; y++) {
+        for (uint32_t x = 0; x < bmp->width; x++) {
+            uint32_t new_x, new_y;
+            if (direction == LEFT) {
+                new_x = bmp->height - y - 1;
+                new_y = x;
+            } else {
+                new_x = y;
+                new_y = bmp->width - x - 1;
+            }
+
+            uint32_t new_offset = (new_y * new_width + new_x) * (bmp->color_depth / 8);
+            uint32_t old_offset = (y * bmp->width + x) * (bmp->color_depth / 8);
+
+            memcpy(&new_data[new_offset], &bmp->data[old_offset], bmp->color_depth / 8);
+        }
+    }
+
+    // Update the BMP structure with the new data
+    free(bmp->data);
+    bmp->data = new_data;
+    bmp->width = new_width;
+    bmp->height = new_height;
+
+    return NO_ERROR;
+}
+
 bmp_error_t bmp_openfile(bmp_t* bmp, const char* filepath) {
     FILE* fptr;
     fptr = fopen(filepath, "rb");
@@ -118,11 +167,11 @@ bmp_error_t bmp_openfile(bmp_t* bmp, const char* filepath) {
 
     for (unsigned int i = 0; i < sizeof(bmp_header_t); i++) {
         printf("%02X ",((uint8_t*)&bmp_header)[i]);
-        
+
         }
         printf("\n");
 
-    
+
     print_header(&bmp_header);
     printf("\n\n\n");
     print_header_hex(&bmp_header);
@@ -146,7 +195,7 @@ bmp_error_t bmp_openfile(bmp_t* bmp, const char* filepath) {
     // bmp_header.colorsUsed = change_endian_32(bmp_header.colorsUsed);
     // bmp_header.imporantColors = change_endian_32(bmp_header.imporantColors);
 
-    
+
     bmp->width = bmp_header.width;
     bmp->height = bmp_header.height;
     switch (bmp_header.bpp)
@@ -196,7 +245,7 @@ bmp_error_t bmp_openfile(bmp_t* bmp, const char* filepath) {
         bmp->data = NULL;
         return INVALID_FILE;
     }
-    
+
     fclose(fptr);
     return NO_ERROR;
 
@@ -221,7 +270,7 @@ bmp_error_t bmp_save(bmp_t* bmp, const char* filepath) {
         break;
     case 32:
         bmp_header.bpp = BPP_32;
-        break;    
+        break;
     default:
         return INVALID_DEPTH;
         break;
@@ -250,19 +299,19 @@ bmp_error_t bmp_save(bmp_t* bmp, const char* filepath) {
     }
 
     uint16_t signature = 0x4d42;
-    
+
     fwrite(&signature, sizeof(uint16_t), 1, fptr);
     fwrite(&bmp_header, sizeof(bmp_header_t), 1, fptr);
     fwrite(bmp->data, bmp_header.imageSize, 1, fptr);
     fclose(fptr);
 
-    return NO_ERROR; 
+    return NO_ERROR;
 
 
 }
 
 
-
+// Required static functions
 static uint32_t change_endian_32(uint32_t num) {
     return ((num & 0xFF000000) >> 24) |
            ((num & 0x00FF0000) >> 8)  |
@@ -275,6 +324,9 @@ static uint16_t change_endian_16(uint16_t num) {
            ((num & 0x00FF) << 8);
 }
 
+
+// Development static functions
+// These can be removed for production releases
 static void print_header_hex(bmp_header_t* bmp_header) {
     // printf("Signature: %04x\n", bmp_header->signature);
     printf("FileSize: %08x\n", bmp_header->filesize);
