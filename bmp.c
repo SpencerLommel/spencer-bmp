@@ -123,7 +123,7 @@ bmp_error_t bmp_rotate(bmp_t *bmp, bmp_rotation_direction_t direction) {
             uint32_t new_offset = (new_y * new_width + new_x) * (bmp->color_depth / 8);
             uint32_t old_offset = (y * bmp->width + x) * (bmp->color_depth / 8);
 
-            memcpy(&new_data[new_offset], &bmp->data[old_offset], bmp->color_depth / 8);
+            memcpy(&new_data[new_offset], (uint8_t*)bmp->data + old_offset, bmp->color_depth / 8);
         }
     }
 
